@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BellRing, Check, Copy, CalendarSearch, MessageCircle } from "lucide-react";
+import { BellRing, Check, Copy, CalendarSearch, Download, MessageCircle, Share2 } from "lucide-react";
 import { barberWhatsapp } from "./BarberPicker";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -24,6 +24,8 @@ export function BookingSuccess({
   phone: string;
 }) {
   const [copied, setCopied] = useState(false);
+  const [receipt, setReceipt] = useState<"loading" | "ready" | "failed">("loading");
+  const receiptUrl = `/api/booking-receipt?code=${encodeURIComponent(booking.code)}&phone=${encodeURIComponent(phone)}`;
   const wa = barberWhatsapp(barberName, shop.whatsapp);
   const when = `${formatInstantDate(booking.starts_at, shop.timezone)} الساعة ${formatInstantTime(booking.starts_at, shop.timezone)}`;
 
@@ -42,6 +44,35 @@ export function BookingSuccess({
         </p>
       </div>
 
+      {receipt !== "failed" && (
+        <div className="mt-8 animate-rise [animation-delay:100ms]">
+          <div className="relative overflow-hidden rounded-3xl">
+            {receipt === "loading" && <div className="aspect-[1080/1900] w-full animate-pulse rounded-3xl bg-coal" />}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={receiptUrl}
+              alt={`وصل الحجز ${booking.code}`}
+              onLoad={() => setReceipt("ready")}
+              onError={() => setReceipt("failed")}
+              className={receipt === "ready" ? "block w-full" : "absolute inset-0 opacity-0"}
+            />
+          </div>
+          {receipt === "ready" && (
+            <div className="mt-3 grid grid-cols-2 gap-2.5">
+              <Button variant="outline" onClick={() => shareReceipt(receiptUrl, booking.code)}>
+                <Share2 className="size-4" />
+                دز الوصل
+              </Button>
+              <Button variant="outline" onClick={() => saveReceipt(receiptUrl, booking.code)}>
+                <Download className="size-4" />
+                احفظ الوصل
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {receipt === "failed" && (
       <div className="mt-8 overflow-hidden rounded-3xl border border-line-soft bg-coal animate-rise [animation-delay:100ms]">
         <div className="flex items-center justify-between border-b border-dashed border-line px-5 py-4">
           <div>
@@ -69,6 +100,7 @@ export function BookingSuccess({
           <Row label="السعر" value={<span className="num">{formatIQD(service.price_iqd)}</span>} />
         </dl>
       </div>
+      )}
 
       <div className="mt-6 space-y-2.5 animate-rise [animation-delay:200ms]">
         <Button size="lg" className="w-full" onClick={() => downloadIcs(shop, service, booking)}>
@@ -133,4 +165,28 @@ function downloadIcs(shop: Shop, service: Service, booking: CreatedBooking) {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** Shares the receipt picture (WhatsApp, Instagram…) where the phone supports it, otherwise saves it. */
+async function shareReceipt(url: string, code: string) {
+  try {
+    const blob = await (await fetch(url)).blob();
+    const file = new File([blob], `wasl-${code}.png`, { type: "image/png" });
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title: `وصل الحجز ${code}` });
+      return;
+    }
+  } catch (e) {
+    if ((e as Error)?.name === "AbortError") return;
+  }
+  saveReceipt(url, code);
+}
+
+function saveReceipt(url: string, code: string) {
+  const a = document.createElement("a");
+  a.href = `${url}&download=1`;
+  a.download = `wasl-${code}.png`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
