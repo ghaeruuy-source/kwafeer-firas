@@ -10,6 +10,8 @@ import { Modal } from "@/components/ui/Modal";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import { formatIQD, formatInstantDate, formatInstantTime, formatPhonePlain, whatsappLink } from "@/lib/format";
 import type { PublicBooking, Shop } from "@/lib/types";
+import { LoyaltyCard } from "@/components/ui/LoyaltyCard";
+import { loyaltyProgress, type LoyaltyProgress } from "@/lib/loyalty";
 
 const STATUS_HINT: Record<PublicBooking["status"], string> = {
   pending: "الصالون راح يأكد حجزك قريباً.",
@@ -23,6 +25,7 @@ export function BookingLookup({ shop, initialCode, initialPhone }: { shop: Shop;
   const [code, setCode] = useState(initialCode);
   const [phone, setPhone] = useState(initialPhone ? formatPhonePlain(initialPhone) : "");
   const [booking, setBooking] = useState<PublicBooking | null>(null);
+  const [loyalty, setLoyalty] = useState<LoyaltyProgress | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
@@ -41,8 +44,11 @@ export function BookingLookup({ shop, initialCode, initialPhone }: { shop: Shop;
       const body = await res.json();
       if (!res.ok) throw new Error(body.error);
       setBooking(body.booking);
+      const l = body.loyalty;
+      setLoyalty(l && l.every > 0 ? loyaltyProgress(Number(l.visits) || 0, { every: l.every, reward: l.reward }) : null);
     } catch (e) {
       setBooking(null);
+      setLoyalty(null);
       setError(e instanceof Error ? e.message : "تعذر جلب الحجز");
     } finally {
       setLoading(false);
@@ -169,6 +175,8 @@ export function BookingLookup({ shop, initialCode, initialPhone }: { shop: Shop;
           </div>
         </div>
       )}
+
+      {booking && loyalty && <LoyaltyCard p={loyalty} audience="customer" className="mt-4 animate-rise" />}
 
       <Modal
         open={confirmCancel}

@@ -15,6 +15,8 @@ import { Card, CardHeader } from "@/components/ui/Card";
 import { ButtonLink } from "@/components/ui/Button";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import { CalendarCheck2, UserX, Wallet } from "lucide-react";
+import { LoyaltyCard } from "@/components/ui/LoyaltyCard";
+import { loyaltyConfig, loyaltyProgress } from "@/lib/loyalty";
 
 export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -31,6 +33,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const bookings = (bookingsData ?? []) as BookingWithRelations[];
   const completed = bookings.filter((b) => b.status === "completed");
   const spent = completed.reduce((s, b) => s + b.price_iqd, 0);
+  const loyalty = loyaltyConfig(shop);
 
   return (
     <BookingsBoard shop={shop} services={catalog.services} barbers={catalog.barbers}>
@@ -58,12 +61,15 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           <StatCard label="مجموع الدفع" value={formatIQD(spent)} icon={Wallet} />
         </div>
         <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
+          <div className="space-y-6">
+          {loyalty && <LoyaltyCard p={loyaltyProgress(completed.length, loyalty)} audience="admin" />}
           <Card>
             <CardHeader title="ملف الزبون" description="الملاحظات تظهر بكل حجز لهذا الزبون" />
             <div className="p-5">
               <CustomerNotesForm customer={c} />
             </div>
           </Card>
+          </div>
           <Card>
             <CardHeader title="سجل الحجوزات" description={`${bookings.length} حجز`} />
             <BookingList bookings={bookings} tz={shop.timezone} showDate emptyTitle="ما عنده حجوزات" />

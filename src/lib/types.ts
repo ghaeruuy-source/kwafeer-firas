@@ -20,6 +20,9 @@ export interface Shop {
   max_active_per_customer: number;
   auto_confirm: boolean;
   sequential_slots: boolean;
+  /** Loyalty card: reward after this many completed visits (0 = off). Missing until the loyalty SQL is run. */
+  loyalty_every?: number;
+  loyalty_reward?: string;
 }
 
 export interface Service {

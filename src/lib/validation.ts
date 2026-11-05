@@ -151,6 +151,11 @@ export const shopSettingsSchema = z.object({
   sequential_slots: z.boolean(),
 });
 
+export const loyaltySettingsSchema = z.object({
+  loyalty_every: intFrom(0, 50, "عدد الزيارات بين 0 و50 (0 = مطفي)"),
+  loyalty_reward: trimmed(2, 80, "اكتب المكافأة (مثلاً: الحلاقة السادسة مجاناً)"),
+});
+
 export const adminBookingSchema = z.object({
   id: uuid.optional(),
   service_id: uuid,
