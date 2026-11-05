@@ -1,12 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarX2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { EmptyState } from "@/components/ui/Feedback";
 import { formatDateKey, formatInstantTime, formatTime12 } from "@/lib/format";
 import { STATUS_DOT, STATUS_LABEL } from "@/lib/status";
-import { addDays, toDateKey, toTimeKey, weekdayOf } from "@/lib/time";
+import { addDays, startOfWeek, toDateKey, toTimeKey, weekdayOf } from "@/lib/time";
 import { useBoard } from "./BookingsBoard";
 import type { Barber, BookingWithRelations, WorkingHours } from "@/lib/types";
 
@@ -21,8 +22,31 @@ const BLOCK_STYLE: Record<string, string> = {
   no_show: "border-rose-400/40 bg-rose-400/10 opacity-70",
 };
 
-export function DayView({ date, bookings, barbers, hours, tz }: { date: string; bookings: BookingWithRelations[]; barbers: Barber[]; hours: WorkingHours[]; tz: string }) {
+export function DayView({
+  date,
+  bookings,
+  barbers,
+  hours,
+  tz,
+  nowMs,
+  slotMinutes = 15,
+}: {
+  date: string;
+  bookings: BookingWithRelations[];
+  barbers: Barber[];
+  hours: WorkingHours[];
+  tz: string;
+  nowMs: number;
+  slotMinutes?: number;
+}) {
   const { open, create } = useBoard();
+  const [now, setNow] = useState(nowMs);
+  const [hover, setHover] = useState<{ barber: string; min: number } | null>(null);
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   const wh = hours.find((h) => h.weekday === weekdayOf(date));
   const columns = barbers.filter((b) => b.is_active || bookings.some((x) => x.barber_id === b.id));
 
@@ -31,6 +55,18 @@ export function DayView({ date, bookings, barbers, hours, tz }: { date: string; 
   const end = Math.ceil(Math.max(wh?.is_open ? toMin(wh.close_time) : 1320, ...bookingMins) / 60) * 60;
   const hoursList = Array.from({ length: (end - start) / 60 }, (_, i) => start + i * 60);
 
+  const isToday = toDateKey(new Date(now), tz) === date;
+  const nowMin = toMin(toTimeKey(new Date(now), tz));
+  const showNow = isToday && nowMin >= start && nowMin <= end;
+  const openFrom = wh?.is_open ? toMin(wh.open_time) : null;
+  const openTo = wh?.is_open ? toMin(wh.close_time) : null;
+
+  const slotAt = (e: React.MouseEvent<HTMLDivElement>) => {
+    const y = e.clientY - e.currentTarget.getBoundingClientRect().top;
+    return start + Math.floor(y / PX_PER_MIN / slotMinutes) * slotMinutes;
+  };
+  const hhmmOf = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+
   if (columns.length === 0) return <EmptyState icon={CalendarX2} title="ما اكو حلاقين" description="أضف حلاق من صفحة الحلاقين حته يطلع التقويم." />;
 
   return (
@@ -38,61 +74,143 @@ export function DayView({ date, bookings, barbers, hours, tz }: { date: string; 
       {wh && !wh.is_open && <p className="border-b border-line-soft bg-coal-2/60 px-4 py-2 text-center text-xs text-mute">الصالون مسدود هذا اليوم حسب جدول الدوام</p>}
       <div className="no-scrollbar overflow-x-auto">
         <div className="flex min-w-max lg:min-w-full">
-          <div className="sticky right-0 z-10 w-16 shrink-0 border-l border-line-soft bg-coal">
-            <div className="h-12 border-b border-line-soft" />
-            {hoursList.map((m) => (
-              <div key={m} style={{ height: 60 * PX_PER_MIN }} className="num relative border-b border-line-soft/50 pr-2 text-[11px] text-faint">
-                <span className="absolute -top-2 right-2 bg-coal px-0.5">{formatTime12(`${String(m / 60).padStart(2, "0")}:00`)}</span>
-              </div>
-            ))}
+          <div className="sticky right-0 z-20 w-16 shrink-0 border-l border-line-soft bg-coal">
+            <div className="h-14 border-b border-line-soft" />
+            <div className="relative">
+              {hoursList.map((m) => (
+                <div key={m} style={{ height: 60 * PX_PER_MIN }} className="num relative border-b border-line-soft/50 pr-2 text-[11px] text-faint">
+                  <span className="absolute -top-2 right-2 bg-coal px-0.5">{formatTime12(`${String(m / 60).padStart(2, "0")}:00`)}</span>
+                </div>
+              ))}
+              {showNow && (
+                <span className="num absolute right-1 z-10 -translate-y-1/2 rounded-full bg-gold px-1.5 text-[10px] font-semibold leading-4 text-ink" style={{ top: (nowMin - start) * PX_PER_MIN }}>
+                  {formatTime12(hhmmOf(nowMin)).replace(/ [صم]$/, "")}
+                </span>
+              )}
+            </div>
           </div>
           {columns.map((barber) => {
             const list = bookings.filter((b) => b.barber_id === barber.id);
+            const live = list.filter((b) => b.status !== "cancelled" && b.status !== "no_show");
             return (
               <div key={barber.id} className="w-44 shrink-0 border-l border-line-soft last:border-l-0 sm:w-56 lg:min-w-56 lg:flex-1">
-                <div className="flex h-12 items-center justify-center border-b border-line-soft px-2 text-sm font-medium">
-                  {barber.name}
-                  <span className="mr-2 rounded-full bg-coal-3 px-2 text-[11px] text-faint">{list.filter((b) => b.status !== "cancelled").length}</span>
+                <div className="sticky top-0 flex h-14 items-center gap-2.5 border-b border-line-soft px-3">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-gold/15 font-display text-sm text-gold-light ring-1 ring-gold/30">{barber.name.trim().charAt(0)}</span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{barber.name}</p>
+                    <p className="num text-[11px] text-faint">{live.length} موعد</p>
+                  </div>
                 </div>
-                <div className="relative" style={{ height: (end - start) * PX_PER_MIN }}>
+                <div
+                  className="relative cursor-copy"
+                  style={{ height: (end - start) * PX_PER_MIN }}
+                  onMouseMove={(e) => setHover({ barber: barber.id, min: slotAt(e) })}
+                  onMouseLeave={() => setHover(null)}
+                  onClick={(e) => create(date, { time: hhmmOf(slotAt(e)), barberId: barber.id })}
+                  title="اضغط على أي وقت فارغ حته تضيف حجز"
+                >
                   {hoursList.map((m) => (
-                    <div key={m} className="border-b border-line-soft/50" style={{ height: 60 * PX_PER_MIN }} />
+                    <div key={m} className="border-b border-line-soft/50" style={{ height: 60 * PX_PER_MIN }}>
+                      <div className="border-b border-dashed border-line-soft/30" style={{ height: 30 * PX_PER_MIN }} />
+                    </div>
                   ))}
+                  {/* shade outside working hours */}
+                  {openFrom !== null && openFrom > start && <div className="pointer-events-none absolute inset-x-0 top-0 bg-ink/40" style={{ height: (openFrom - start) * PX_PER_MIN }} />}
+                  {openTo !== null && openTo < end && <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-ink/40" style={{ height: (end - openTo) * PX_PER_MIN }} />}
                   {wh?.break_start && wh.break_end && (
                     <div
-                      className="absolute inset-x-0 flex items-center justify-center bg-[repeating-linear-gradient(135deg,transparent,transparent_6px,rgba(255,255,255,0.03)_6px,rgba(255,255,255,0.03)_12px)] text-[11px] text-faint"
+                      className="pointer-events-none absolute inset-x-0 flex items-center justify-center bg-[repeating-linear-gradient(135deg,transparent,transparent_6px,rgba(255,255,255,0.03)_6px,rgba(255,255,255,0.03)_12px)] text-[11px] text-faint"
                       style={{ top: (toMin(wh.break_start) - start) * PX_PER_MIN, height: (toMin(wh.break_end) - toMin(wh.break_start)) * PX_PER_MIN }}
                     >
                       استراحة
                     </div>
                   )}
+                  {hover?.barber === barber.id && (
+                    <div
+                      className="pointer-events-none absolute inset-x-1.5 flex items-center rounded-lg border border-dashed border-gold/50 bg-gold/5 px-2 text-[11px] text-gold-light"
+                      style={{ top: (hover.min - start) * PX_PER_MIN, height: slotMinutes * PX_PER_MIN }}
+                    >
+                      <span className="num">+ {formatTime12(hhmmOf(hover.min))}</span>
+                    </div>
+                  )}
                   {list.map((b) => {
                     const s = toMin(toTimeKey(new Date(b.starts_at), tz));
                     const e = toMin(toTimeKey(new Date(b.ends_at), tz)) || 1440;
+                    const h = (e - s) * PX_PER_MIN;
                     return (
                       <button
                         key={b.id}
-                        onClick={() => open(b)}
-                        title={STATUS_LABEL[b.status]}
-                        className={cn("absolute inset-x-1.5 overflow-hidden rounded-lg border-r-[3px] px-2 py-1 text-right transition hover:brightness-125", BLOCK_STYLE[b.status])}
-                        style={{ top: (s - start) * PX_PER_MIN + 1, height: Math.max((e - s) * PX_PER_MIN - 2, 26) }}
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          open(b);
+                        }}
+                        onMouseMove={(ev) => ev.stopPropagation()}
+                        onMouseEnter={() => setHover(null)}
+                        title={`${b.customer?.name ?? ""} · ${STATUS_LABEL[b.status]}`}
+                        className={cn("absolute inset-x-1.5 z-[1] cursor-pointer overflow-hidden rounded-lg border-r-[3px] px-2 py-1 text-right shadow-sm transition hover:brightness-125", BLOCK_STYLE[b.status])}
+                        style={{ top: (s - start) * PX_PER_MIN + 1, height: Math.max(h - 2, 26) }}
                       >
                         <p className="truncate text-xs font-medium">{b.customer?.name}</p>
                         <p className="num truncate text-[11px] text-mute">
                           {formatInstantTime(b.starts_at, tz)} · {b.service?.name}
                         </p>
+                        {h > 60 && <p className="mt-0.5 truncate text-[11px] text-faint">{STATUS_LABEL[b.status]}</p>}
                       </button>
                     );
                   })}
+                  {showNow && (
+                    <div className="pointer-events-none absolute inset-x-0 z-[2] h-0.5 bg-gold shadow-[0_0_8px_rgba(200,155,90,0.7)]" style={{ top: (nowMin - start) * PX_PER_MIN }} />
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
       </div>
-      <div className="flex justify-center border-t border-line-soft p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft px-4 py-3">
+        <StatusLegend />
         <button onClick={() => create(date)} className="text-sm text-gold hover:text-gold-light">+ أضف حجز لهذا اليوم</button>
       </div>
+    </div>
+  );
+}
+
+export function StatusLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-faint">
+      {(Object.keys(STATUS_LABEL) as (keyof typeof STATUS_LABEL)[]).map((s) => (
+        <span key={s} className="inline-flex items-center gap-1.5">
+          <span className={cn("size-2 rounded-full", STATUS_DOT[s])} />
+          {STATUS_LABEL[s]}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Seven-day chip strip above the day view for one-tap day switching (Booksy/Fresha style). */
+export function DayStrip({ date, today, counts }: { date: string; today: string; counts: Record<string, number> }) {
+  const from = startOfWeek(date);
+  const days = Array.from({ length: 7 }, (_, i) => addDays(from, i));
+  return (
+    <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      {days.map((d) => {
+        const active = d === date;
+        return (
+          <Link
+            key={d}
+            href={`/admin/calendar?view=day&date=${d}`}
+            className={cn(
+              "flex min-w-14 flex-1 flex-col items-center gap-0.5 rounded-2xl border px-2 py-2 transition",
+              active ? "border-gold bg-gold text-ink" : d === today ? "border-gold/40 bg-coal text-gold-light" : "border-line-soft bg-coal text-mute hover:border-gold/30",
+            )}
+          >
+            <span className="text-[11px]">{formatDateKey(d, { weekday: "short" })}</span>
+            <span className="num font-display text-lg leading-tight">{Number(d.slice(8))}</span>
+            <span className={cn("num text-[10px]", active ? "text-ink/70" : "text-faint")}>{counts[d] ? `${counts[d]} حجز` : "—"}</span>
+          </Link>
+        );
+      })}
     </div>
   );
 }
