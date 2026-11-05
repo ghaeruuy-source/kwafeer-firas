@@ -8,7 +8,9 @@ import { Alert } from "@/components/ui/Feedback";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
 import { WhatsAppIcon } from "@/components/ui/icons";
-import { formatIQD, formatInstantDate, formatInstantTime, formatPhonePlain, whatsappLink } from "@/lib/format";
+import { formatIQD, formatInstantDate, formatInstantTime, formatPhonePlain, normalizeIraqiPhone, whatsappLink } from "@/lib/format";
+import { bookingWhatsappText, receiptLink } from "@/lib/booking-message";
+import { barberWhatsapp } from "./BarberPicker";
 import type { PublicBooking, Shop } from "@/lib/types";
 
 const STATUS_HINT: Record<PublicBooking["status"], string> = {
@@ -27,6 +29,8 @@ export function BookingLookup({ shop, initialCode, initialPhone }: { shop: Shop;
   const [error, setError] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const normalizedPhone = normalizeIraqiPhone(phone);
+  const barberWa = booking ? barberWhatsapp(booking.barber_name, shop.whatsapp) : null;
   const [recent, setRecent] = useState<{ code: string; phone: string }[]>([]);
 
   const lookup = useCallback(async (c: string, p: string) => {
@@ -148,10 +152,15 @@ export function BookingLookup({ shop, initialCode, initialPhone }: { shop: Shop;
             </dl>
           </div>
           <div className="space-y-2 border-t border-line-soft px-5 py-4">
-            {shop.whatsapp && (
-              <ButtonLink href={whatsappLink(shop.whatsapp, `مرحبا، بخصوص حجزي رقم ${booking.code}`)} variant="outline" className="w-full">
+            {barberWa && (
+              <ButtonLink href={whatsappLink(barberWa, bookingWhatsappText({
+                barberName: booking.barber_name, customerName: booking.customer_name, phone: normalizedPhone,
+                serviceName: booking.service_name, startsAt: booking.starts_at, timezone: shop.timezone,
+                priceIqd: booking.price_iqd, code: booking.code, note: booking.customer_note,
+                receiptUrl: normalizedPhone ? receiptLink(booking.code, normalizedPhone) : null,
+              }))} variant="outline" className="w-full">
                 <WhatsAppIcon className="size-4 text-emerald-400" />
-                تواصل ويا الصالون
+                {booking.barber_name ? `راسل ${booking.barber_name} على الواتساب` : "تواصل ويا الصالون"}
               </ButtonLink>
             )}
             {booking.can_cancel && (

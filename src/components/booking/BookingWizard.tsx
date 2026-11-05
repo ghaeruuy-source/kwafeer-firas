@@ -215,7 +215,7 @@ export function BookingWizard({
   }
 
   if (step === "done" && created && service) {
-    return <BookingSuccess shop={shop} service={service} barberName={created.booking.barber_name ?? null} booking={created.booking} phone={created.phone} />;
+    return <BookingSuccess shop={shop} service={service} barberName={created.booking.barber_name ?? null} booking={created.booking} phone={created.phone} customerName={name.replace(/\s+/g, " ").trim()} />;
   }
 
   const groupedSlots = groupSlots(slots ?? [], shop.timezone);
