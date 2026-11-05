@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "كوافير فراس اوامي | احجز موعدك",
-    short_name: "كوافير فراس",
-    description: "احجز موعد حلاقتك بكوافير فراس اوامي بثواني.",
+    name: "فراس اوامي | احجز موعدك",
+    short_name: "فراس اوامي",
+    description: "احجز موعد حلاقتك عند فراس اوامي بثواني.",
     lang: "ar",
     dir: "rtl",
     start_url: "/",
