@@ -6,7 +6,8 @@ import { BellRing, Check, Copy, CalendarSearch, Download, MessageCircle, Share2 
 import { barberWhatsapp } from "./BarberPicker";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { formatIQD, formatInstantDate, formatInstantTime } from "@/lib/format";
+import { formatIQD, formatInstantDate, formatInstantTime, whatsappLink } from "@/lib/format";
+import { bookingWhatsappText, receiptLink } from "@/lib/booking-message";
 import type { Service, Shop } from "@/lib/types";
 import type { CreatedBooking } from "./BookingWizard";
 
@@ -16,12 +17,14 @@ export function BookingSuccess({
   barberName,
   booking,
   phone,
+  customerName,
 }: {
   shop: Shop;
   service: Service;
   barberName: string | null;
   booking: CreatedBooking;
   phone: string;
+  customerName?: string;
 }) {
   const [copied, setCopied] = useState(false);
   const [receipt, setReceipt] = useState<"loading" | "ready" | "failed">("loading");
@@ -114,7 +117,11 @@ export function BookingSuccess({
         </ButtonLink>
         {wa && (
           <ButtonLink
-            href={`https://wa.me/${wa}?text=${encodeURIComponent(`هلو${barberName ? ` ${barberName}` : ""}، حجزت عندك ${when}. رمز الحجز ${booking.code}`)}`}
+            href={whatsappLink(wa, bookingWhatsappText({
+              barberName, customerName, phone, serviceName: service.name, startsAt: booking.starts_at,
+              timezone: shop.timezone, priceIqd: service.price_iqd, code: booking.code,
+              receiptUrl: receiptLink(booking.code, phone),
+            }))}
             target="_blank"
             rel="noopener noreferrer"
             variant="outline"
