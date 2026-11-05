@@ -254,3 +254,29 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 .gold-frame-inner::before { top: 10px; right: 10px; border-left: 0; border-bottom: 0; border-top-right-radius: 8px; }
 .gold-frame-inner::after { bottom: 10px; left: 10px; border-right: 0; border-top: 0; border-bottom-left-radius: 8px; }
+
+/* "Book now" in the crest's own style: black enamel plaque, gold rim, real crest ornaments */
+.royal-btn { transition: transform 0.2s ease, filter 0.2s ease; filter: drop-shadow(0 14px 26px rgb(0 0 0 / 0.55)); }
+.royal-btn:hover { filter: drop-shadow(0 14px 30px rgb(200 155 90 / 0.45)) brightness(1.05); }
+.royal-btn:active { transform: scale(0.98); }
+.royal-plaque {
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgb(255 230 170 / 0.16), transparent 60%) padding-box,
+    linear-gradient(180deg, #1b1b1b, #050505) padding-box,
+    linear-gradient(135deg, #fff1c8, #b8873f 25%, #f6dfa4 50%, #7a5420 75%, #f6dfa4) border-box;
+  box-shadow: inset 0 0 0 4px #0a0a0a, inset 0 0 0 5px rgb(217 176 114 / 0.55), 0 0 22px -6px rgb(246 223 164 / 0.45);
+  overflow: hidden;
+}
+.royal-plaque::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 38%, rgb(255 240 200 / 0.18) 50%, transparent 62%);
+  transform: translateX(-120%);
+  animation: plaque-shine 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+.royal-crown { filter: drop-shadow(0 4px 8px rgb(0 0 0 / 0.5)); }
+@media (prefers-reduced-motion: reduce) { .royal-plaque::after { display: none } }

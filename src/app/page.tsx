@@ -12,7 +12,7 @@ import { SetupNotice } from "@/components/site/SetupNotice";
 import { InstagramIcon, Monogram, WhatsAppIcon } from "@/components/ui/icons";
 import { EmptyState } from "@/components/ui/Feedback";
 import { InstallApp } from "@/components/site/InstallApp";
-import { ButtonScroll, OrnateTitle } from "@/components/site/OrnateTitle";
+import { OrnateTitle } from "@/components/site/OrnateTitle";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -61,19 +61,22 @@ export default async function HomePage() {
                 {status.label}
               </span>
               <OrnateTitle text={shop.name} />
-              <Link
-                href="/book"
-                className="book-now btn-ornate group mt-7 flex h-[4.5rem] w-full max-w-sm items-center justify-center gap-3 px-14 text-2xl font-bold text-ink"
-              >
-                <ButtonScroll className="absolute right-3 top-1/2 h-8 w-10 -translate-y-1/2" />
-                <span className="relative">احجز الآن</span>
-                <ArrowLeft className="relative size-6 transition group-hover:-translate-x-1" />
-                <ButtonScroll className="absolute left-3 top-1/2 h-8 w-10 -translate-y-1/2 -scale-x-100" />
+              <Link href="/book" className="book-now royal-btn group relative mt-14 block w-full max-w-[19rem]" aria-label="احجز الآن">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/btn-crown.webp" alt="" aria-hidden className="royal-crown pointer-events-none absolute -top-[46px] left-1/2 w-[76px] -translate-x-1/2" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/btn-scroll.webp" alt="" aria-hidden className="pointer-events-none absolute -left-8 top-1/2 h-[112px] -translate-y-1/2" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/btn-scroll.webp" alt="" aria-hidden className="pointer-events-none absolute -right-8 top-1/2 h-[112px] -translate-y-1/2 -scale-x-100" />
+                <span className="royal-plaque relative flex h-[4.5rem] items-center justify-center gap-3">
+                  <span className="gold-text !text-[1.9rem] font-display">احجز الآن</span>
+                  <ArrowLeft className="size-6 text-[#f0d49a] transition group-hover:-translate-x-1" />
+                </span>
               </Link>
               {next && (
                 <Link
                   href={`/book?date=${next.date}&at=${encodeURIComponent(next.at)}`}
-                  className="mt-3 flex h-16 w-full max-w-sm items-center gap-3 rounded-full border-2 border-gold/60 bg-gold/[0.12] px-5 text-start text-gold-light shadow-[0_10px_30px_-14px_rgba(200,155,90,0.7)] transition hover:border-gold hover:bg-gold/20 active:scale-[0.98]"
+                  className="mt-7 flex h-16 w-full max-w-sm items-center gap-3 rounded-full border-2 border-gold/60 bg-gold/[0.12] px-5 text-start text-gold-light shadow-[0_10px_30px_-14px_rgba(200,155,90,0.7)] transition hover:border-gold hover:bg-gold/20 active:scale-[0.98]"
                 >
                   <span className="relative grid size-10 shrink-0 place-items-center rounded-full bg-gold/20">
                     <span className="absolute inline-flex size-full animate-ping rounded-full bg-gold-light/20" />
