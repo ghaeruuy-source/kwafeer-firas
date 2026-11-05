@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Music2, VolumeX } from "lucide-react";
 
 /**
@@ -163,6 +164,13 @@ export function JazzAudio() {
   const [on, setOn] = useState(true);
   const [started, setStarted] = useState(false);
   const onRef = useRef(true);
+  const pathname = usePathname();
+  const inAdmin = pathname?.startsWith("/admin") ?? false;
+
+  // The music is for customers only: silence it inside the salon dashboard.
+  useEffect(() => {
+    if (inAdmin) engine.current?.stop();
+  }, [inAdmin]);
 
   useEffect(() => {
     try {
@@ -177,7 +185,7 @@ export function JazzAudio() {
 
     const get = () => (engine.current ??= new Jazz());
     const onTap = (e: Event) => {
-      if (!onRef.current) return;
+      if (!onRef.current || location.pathname.startsWith("/admin")) return;
       const el = (e.target as HTMLElement | null)?.closest("a, button, [role='button'], label, select, summary");
       if (!el || el.closest("[data-no-tone]")) return;
       const j = get();
@@ -190,7 +198,7 @@ export function JazzAudio() {
     document.addEventListener("pointerdown", onTap, { capture: true });
     const onHide = () => {
       if (document.hidden) engine.current?.stop();
-      else if (onRef.current && engine.current) engine.current.start();
+      else if (onRef.current && engine.current && !location.pathname.startsWith("/admin")) engine.current.start();
     };
     document.addEventListener("visibilitychange", onHide);
     return () => {
@@ -215,6 +223,8 @@ export function JazzAudio() {
       setStarted(true);
     } else j.stop();
   };
+
+  if (inAdmin) return null;
 
   return (
     <button
