@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, Copy, CalendarSearch, CalendarPlus } from "lucide-react";
+import { BellRing, Check, Copy, CalendarSearch } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatIQD, formatInstantDate, formatInstantTime } from "@/lib/format";
@@ -69,10 +69,11 @@ export function BookingSuccess({
       </div>
 
       <div className="mt-6 space-y-2.5 animate-rise [animation-delay:200ms]">
-        <Button variant="outline" size="lg" className="w-full" onClick={() => downloadIcs(shop, service, booking)}>
-          <CalendarPlus className="size-5" />
-          أضف للتقويم
+        <Button size="lg" className="w-full" onClick={() => downloadIcs(shop, service, booking)}>
+          <BellRing className="size-5" />
+          فعّل تذكير موعدي
         </Button>
+        <p className="pb-1 text-center text-xs text-faint">يضيف الموعد لتقويم موبايلك، ويذكّرك قبلها بيوم وقبل ساعة.</p>
         <ButtonLink href={`/booking?code=${booking.code}&phone=${phone}`} variant="outline" size="lg" className="w-full">
           <CalendarSearch className="size-5" />
           تابع حالة الحجز
@@ -94,7 +95,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-/** Calendar file with a reminder one hour before; opens in Google/Apple/Samsung calendar. */
+/** Calendar file with reminders a day and an hour before; opens in Google/Apple/Samsung calendar. */
 function downloadIcs(shop: Shop, service: Service, booking: CreatedBooking) {
   const f = (iso: string) => new Date(iso).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
   const esc = (t: string) => t.replace(/[\\;,]/g, (c) => `\\${c}`).replace(/\n/g, "\\n");
@@ -105,7 +106,8 @@ function downloadIcs(shop: Shop, service: Service, booking: CreatedBooking) {
     `SUMMARY:${esc(`${service.name} - ${shop.name}`)}`,
     ...(shop.address ? [`LOCATION:${esc(shop.address)}`] : []),
     `DESCRIPTION:${esc(`رمز الحجز ${booking.code}`)}`,
-    "BEGIN:VALARM", "TRIGGER:-PT1H", "ACTION:DISPLAY", `DESCRIPTION:${esc("موعدك بعد ساعة")}`, "END:VALARM",
+    "BEGIN:VALARM", "TRIGGER:-P1D", "ACTION:DISPLAY", `DESCRIPTION:${esc(`تذكير: موعدك باجر ب${shop.name}`)}`, "END:VALARM",
+    "BEGIN:VALARM", "TRIGGER:-PT1H", "ACTION:DISPLAY", `DESCRIPTION:${esc(`موعدك بعد ساعة ب${shop.name}`)}`, "END:VALARM",
     "END:VEVENT", "END:VCALENDAR",
   ].join("\r\n");
   const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));

@@ -66,6 +66,12 @@ export const createBookingSchema = z.object({
   note: optionalText(300),
 });
 
+export const waitlistSchema = z.object({
+  date: dateKey,
+  name: trimmed(2, 60, "اكتب اسمك (حرفين على الأقل)"),
+  phone: phoneSchema,
+});
+
 export const lookupSchema = z.object({
   code: z
     .string()
