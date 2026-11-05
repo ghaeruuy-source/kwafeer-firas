@@ -17,6 +17,7 @@ import {
   statusSchema,
   uuid,
   workingDaySchema,
+  loyaltySettingsSchema,
 } from "@/lib/validation";
 import type { ActionResult } from "@/lib/types";
 import { z } from "zod";
@@ -186,6 +187,21 @@ export async function saveCustomer(input: unknown): Promise<ActionResult> {
   if (!p.success) return { ok: false, error: firstError(p.error) };
   const { error } = await supabase.from("customers").update({ name: p.data.name, notes: p.data.notes }).eq("id", p.data.id).eq("shop_id", shop.id);
   if (error) return { ok: false, error: toArabicError(error) };
+  refresh();
+  return { ok: true };
+}
+
+// ---------------- Loyalty card ----------------
+
+export async function saveLoyaltySettings(input: unknown): Promise<ActionResult> {
+  const { supabase, shop } = await requireAdmin();
+  const p = loyaltySettingsSchema.safeParse(input);
+  if (!p.success) return { ok: false, error: firstError(p.error) };
+  const { error } = await supabase.from("shops").update(p.data).eq("id", shop.id);
+  if (error) {
+    if (/loyalty_/.test(error.message)) return { ok: false, error: "لازم تشغل كود SQL مال بطاقة الولاء بـ Supabase أول مرة، بعدها تكدر تحفظ." };
+    return { ok: false, error: toArabicError(error) };
+  }
   refresh();
   return { ok: true };
 }

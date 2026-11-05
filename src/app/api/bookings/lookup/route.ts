@@ -14,5 +14,7 @@ export async function POST(req: Request) {
   const { data, error } = await supabase.rpc("get_booking_public", { p_code: parsed.data.code, p_phone: parsed.data.phone });
   if (error) return fail(toArabicError(error));
   if (!data) return fail(toArabicError("BOOKING_NOT_FOUND"), 404);
-  return json({ booking: data });
+  // Loyalty card progress; null until the loyalty SQL is run or when the shop switched it off.
+  const { data: loyalty } = await supabase.rpc("get_loyalty_public", { p_code: parsed.data.code, p_phone: parsed.data.phone });
+  return json({ booking: data, loyalty: loyalty ?? null });
 }
