@@ -10,11 +10,12 @@ import { Alert, EmptyState } from "@/components/ui/Feedback";
 import { ShopMark } from "@/components/site/SiteHeader";
 import { BookingSuccess } from "./BookingSuccess";
 import { VipWaitlist } from "./VipWaitlist";
+import { BarberPicker, barberPhoto } from "./BarberPicker";
 import { formatDateKey, formatDuration, formatIQD, formatInstantTime, formatPhone, formatTime12, normalizeIraqiPhone } from "@/lib/format";
 import { addDays, hhmm, todayKey, toTimeKey, weekdayOf } from "@/lib/time";
 import type { Barber, Service, Shop, Slot, WorkingHours, BookingStatus } from "@/lib/types";
 
-type Step = "day" | "time" | "service" | "details" | "review" | "done";
+type Step = "barber" | "day" | "time" | "service" | "details" | "review" | "done";
 
 export interface CreatedBooking {
   code: string;
@@ -29,6 +30,7 @@ const STORAGE_KEY = "barber.customer";
 export function BookingWizard({
   shop,
   services,
+  barbers,
   hours,
   initialServiceId,
   initialBarberId,
@@ -45,10 +47,12 @@ export function BookingWizard({
   initialDate?: string | null;
   initialAt?: string | null;
 }) {
-  // Flow the shop asked for: day → time → service → details → review → done.
-  // The barber is assigned automatically (first free one) unless the link pre-picks one.
-  const barberId = initialBarberId;
-  const [step, setStep] = useState<Step>(initialDate ? "time" : "day");
+  // Flow the shop asked for: barber → day → time → service → details → review → done.
+  // Each barber has his own times. With one barber (or a link that pre-picks one) the first step is skipped.
+  const pickBarber = barbers.length > 1;
+  const [barberId, setBarberId] = useState<string | null>(initialBarberId ?? (pickBarber ? null : barbers[0]?.id ?? null));
+  const barber = barbers.find((b) => b.id === barberId) ?? null;
+  const [step, setStep] = useState<Step>(pickBarber && !initialBarberId ? "barber" : initialDate ? "time" : "day");
   const [serviceId, setServiceId] = useState<string | null>(initialServiceId);
 
   const [date, setDate] = useState<string | null>(initialDate);
@@ -153,6 +157,7 @@ export function BookingWizard({
   };
 
   const steps: { id: Step; label: string }[] = [
+    ...(pickBarber ? [{ id: "barber" as Step, label: "الحلاق" }] : []),
     { id: "day", label: "اليوم" },
     { id: "time", label: "الوقت" },
     { id: "service", label: "الخدمة" },
@@ -160,7 +165,7 @@ export function BookingWizard({
     { id: "review", label: "التأكيد" },
   ];
   const stepIndex = steps.findIndex((s) => s.id === step);
-  const prev: Partial<Record<Step, Step>> = { time: "day", service: "time", details: "service", review: "details" };
+  const prev: Partial<Record<Step, Step>> = { ...(pickBarber ? { day: "barber" as Step } : {}), time: "day", service: "time", details: "service", review: "details" };
 
   function toReview() {
     const errs: typeof fieldErrors = {};
@@ -248,8 +253,27 @@ export function BookingWizard({
           </button>
         )}
 
+        {step === "barber" && (
+          <StepShell title="منو تحب يحلقلك؟" subtitle="كل حلاق إله مواعيده الخاصة.">
+            <BarberPicker
+              barbers={barbers}
+              selectedId={barberId}
+              onPick={(id) => {
+                if (id !== barberId) {
+                  setFreeByDay({});
+                  setSlots(null);
+                  setSlot(null);
+                }
+                setBarberId(id);
+                setSubmitError(null);
+                go(date ? "time" : "day");
+              }}
+            />
+          </StepShell>
+        )}
+
         {step === "day" && (
-          <StepShell title="أي يوم يناسبك؟" subtitle={refService ? `كل موعد ${formatDuration(refService.duration_minutes)}` : undefined}>
+          <StepShell title="أي يوم يناسبك؟" subtitle={[barber && pickBarber ? `ويا ${barber.name}` : null, refService ? `كل موعد ${formatDuration(refService.duration_minutes)}` : null].filter(Boolean).join(" · ") || undefined}>
             {services.length === 0 ? (
               <EmptyState icon={Scissors} title="الحجز راح يفتح قريباً" description="تواصل ويا الصالون على الواتساب." />
             ) : (
@@ -415,6 +439,20 @@ export function BookingWizard({
         {step === "review" && service && slot && date && (
           <StepShell title="راجع حجزك" subtitle={'تأكد من التفاصيل واضغط "أكد الحجز".'}>
             <dl className="space-y-3.5 rounded-[14px] border border-line-soft bg-coal px-5 py-5 text-sm">
+              {barber && pickBarber && (
+                <ReviewRow
+                  label="الحلاق"
+                  value={
+                    <span className="inline-flex items-center gap-2">
+                      {barberPhoto(barber) && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={barberPhoto(barber)!} alt="" className="size-6 rounded-full border border-gold/50 object-cover" />
+                      )}
+                      {barber.name}
+                    </span>
+                  }
+                />
+              )}
               <ReviewRow label="اليوم" value={formatDateKey(date, { weekday: "long", day: "numeric", month: "long" })} />
               <ReviewRow label="الوقت" value={<span className="num">{formatInstantTime(slot.slot_start, shop.timezone)}</span>} />
               <ReviewRow label="الخدمة" value={service.name} />
