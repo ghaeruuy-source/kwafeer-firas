@@ -2,12 +2,12 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { requireAdmin } from "@/lib/shop";
 import { getBookingsInRange, getCatalog } from "@/lib/admin-data";
-import { addDays, endOfMonth, isDateKey, startOfMonth, startOfWeek, todayKey } from "@/lib/time";
+import { addDays, endOfMonth, isDateKey, startOfMonth, startOfWeek, toDateKey, todayKey } from "@/lib/time";
 import { formatDateKey } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { PageBody, PageHeader } from "@/components/admin/PageHeader";
 import { BookingsBoard, NewBookingButton } from "@/components/admin/BookingsBoard";
-import { DayView, MonthView, WeekView } from "@/components/admin/CalendarViews";
+import { DayStrip, DayView, MonthView, WeekView } from "@/components/admin/CalendarViews";
 import type { WorkingHours } from "@/lib/types";
 
 export const metadata = { title: "التقويم" };
@@ -38,11 +38,25 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
 
   const [catalog, bookings, hoursRes] = await Promise.all([
     getCatalog(supabase, shop.id),
-    getBookingsInRange(supabase, shop.id, tz, view === "month" ? startOfWeek(from) : from, view === "month" ? addDays(startOfWeek(to), 6) : to),
+    // day view loads its whole week so the day strip can show per-day counts
+    getBookingsInRange(
+      supabase,
+      shop.id,
+      tz,
+      view === "month" ? startOfWeek(from) : view === "day" ? startOfWeek(date) : from,
+      view === "month" ? addDays(startOfWeek(to), 6) : view === "day" ? addDays(startOfWeek(date), 6) : to,
+    ),
     supabase.from("working_hours").select("*").eq("shop_id", shop.id),
   ]);
   const hours = (hoursRes.data ?? []) as WorkingHours[];
   const href = (v: View, d: string) => `/admin/calendar?view=${v}&date=${d}`;
+  const counts: Record<string, number> = {};
+  for (const b of bookings) {
+    if (b.status === "cancelled") continue;
+    const k = toDateKey(new Date(b.starts_at), tz);
+    counts[k] = (counts[k] ?? 0) + 1;
+  }
+  const dayBookings = view === "day" ? bookings.filter((b) => toDateKey(new Date(b.starts_at), tz) === date) : bookings;
 
   return (
     <BookingsBoard shop={shop} services={catalog.services} barbers={catalog.barbers}>
@@ -59,7 +73,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
             <Link href={href(view, today)} className="rounded-xl border border-line bg-coal px-3 py-2 text-sm hover:border-gold/40">
               اليوم
             </Link>
-            <h2 className="mr-2 font-display text-lg">{title}</h2>
+            <h2 className="mr-2 font-display text-base sm:text-lg">{title}</h2>
           </div>
           <div className="flex rounded-xl border border-line bg-coal p-1 text-sm">
             {(["day", "week", "month"] as View[]).map((v) => (
@@ -70,7 +84,8 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
           </div>
         </div>
 
-        {view === "day" && <DayView date={date} bookings={bookings} barbers={catalog.barbers} hours={hours} tz={tz} />}
+        {view === "day" && <DayStrip date={date} today={today} counts={counts} />}
+        {view === "day" && <DayView date={date} bookings={dayBookings} barbers={catalog.barbers} hours={hours} tz={tz} nowMs={Date.now()} slotMinutes={shop.slot_interval_minutes || 15} />}
         {view === "week" && <WeekView from={from} bookings={bookings} tz={tz} today={today} />}
         {view === "month" && <MonthView month={from} bookings={bookings} tz={tz} today={today} />}
       </PageBody>

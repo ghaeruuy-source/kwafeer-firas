@@ -21,6 +21,8 @@ export function BookingForm({
   barbers,
   tz,
   defaultDate,
+  defaultTime,
+  defaultBarberId,
 }: {
   open: boolean;
   onClose: () => void;
@@ -29,6 +31,8 @@ export function BookingForm({
   barbers: Barber[];
   tz: string;
   defaultDate?: string;
+  defaultTime?: string;
+  defaultBarberId?: string;
 }) {
   const router = useRouter();
   const editing = Boolean(booking);
@@ -37,9 +41,9 @@ export function BookingForm({
 
   const [form, setForm] = useState(() => ({
     service_id: booking?.service_id ?? activeServices[0]?.id ?? "",
-    barber_id: booking?.barber_id ?? activeBarbers[0]?.id ?? "",
+    barber_id: booking?.barber_id ?? (activeBarbers.some((b) => b.id === defaultBarberId) ? defaultBarberId! : activeBarbers[0]?.id) ?? "",
     date: booking ? toDateKey(new Date(booking.starts_at), tz) : (defaultDate ?? todayKey(tz)),
-    time: booking ? toTimeKey(new Date(booking.starts_at), tz) : "",
+    time: booking ? toTimeKey(new Date(booking.starts_at), tz) : (defaultTime ?? ""),
     status: (booking?.status ?? "confirmed") as BookingStatus,
     name: booking?.customer?.name ?? "",
     phone: booking?.customer?.phone ? formatPhonePlain(booking.customer.phone) : "",
