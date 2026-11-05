@@ -224,3 +224,33 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .btn-ornate:active { transform: scale(0.98); }
 @keyframes plaque-shine { 0%, 55% { transform: translateX(-120%) } 85%, 100% { transform: translateX(120%) } }
 @media (prefers-reduced-motion: reduce) { .btn-ornate::after { animation: none; display: none } }
+
+/* Luxurious gold-framed service card */
+.gold-frame {
+  position: relative;
+  border-radius: 1.25rem;
+  padding: 2px;
+  background: linear-gradient(135deg, #f6dfa4, #9c6f2e 30%, #e9c98a 50%, #7a5420 70%, #f6dfa4);
+  box-shadow: 0 18px 40px -22px rgb(200 155 90 / 0.8);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.gold-frame:hover { transform: translateY(-3px); box-shadow: 0 24px 50px -20px rgb(200 155 90 / 0.95); }
+.gold-frame:active { transform: scale(0.98); }
+.gold-frame-inner {
+  position: relative;
+  border-radius: calc(1.25rem - 2px);
+  background:
+    radial-gradient(circle at 50% 0%, rgb(217 176 114 / 0.16), transparent 60%),
+    linear-gradient(180deg, #123a2f, #0b241d);
+  box-shadow: inset 0 0 0 5px #0b241d, inset 0 0 0 6px rgb(217 176 114 / 0.45);
+}
+.gold-frame-inner::before, .gold-frame-inner::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid rgb(246 223 164 / 0.7);
+  pointer-events: none;
+}
+.gold-frame-inner::before { top: 10px; right: 10px; border-left: 0; border-bottom: 0; border-top-right-radius: 8px; }
+.gold-frame-inner::after { bottom: 10px; left: 10px; border-right: 0; border-top: 0; border-bottom-left-radius: 8px; }

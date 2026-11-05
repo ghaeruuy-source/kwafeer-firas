@@ -17,6 +17,8 @@ const MESSAGES: Record<string, string> = {
   INVALID_STATUS: "الحالة غير صالحة.",
   BOOKING_NOT_FOUND: "ما لكينا الحجز. تأكد من الرمز ورقم الموبايل.",
   CANNOT_CANCEL: "ما يصير تلغي هذا الحجز. الإلغاء متاح قبل الموعد بساعة على الأقل.",
+  OUTSIDE_WINDOW: "هذا اليوم خارج فترة الحجز.",
+  WAITLIST_FULL: "قائمة VIP لهذا اليوم امتلت. جرّب يوم ثاني.",
   FORBIDDEN: "ما عندك صلاحية لهذا الإجراء.",
 };
 

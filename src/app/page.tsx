@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Clock3, MapPin, Phone, Scissors } from "lucide-react";
+import { ArrowLeft, Clock3, Crown, MapPin, Phone, Scissors } from "lucide-react";
 import { getNextFreeSlot, getStorefront } from "@/lib/shop";
 import { openStatus } from "@/lib/hours";
 import { formatDuration, formatIQD, formatInstantTime, formatPhone, whatsappLink } from "@/lib/format";
@@ -122,22 +122,39 @@ export default async function HomePage() {
           {services.length === 0 ? (
             <EmptyState icon={Scissors} title="الخدمات راح تنضاف قريباً" description="تكدر تتواصل ويانا على الواتساب لحد ما تكمل القائمة." />
           ) : (
-            <ul className="mt-10 grid gap-x-14 gap-y-1 md:grid-cols-2">
-              {services.map((s) => (
-                <li key={s.id}>
-                  <Link href={`/book?service=${s.id}`} className="group flex items-baseline gap-3 rounded-xl px-2 py-4 transition hover:bg-coal/60">
-                    <span className="min-w-0 max-w-[70%]">
-                      <span className="block font-medium text-bone transition group-hover:text-gold-light">{s.name}</span>
-                      <span className="mt-1 flex items-start gap-1.5 text-xs leading-5 text-faint">
-                        <Clock3 className="mt-0.5 size-3.5 shrink-0" />
-                        <span>{s.description || formatDuration(s.duration_minutes)}</span>
+            <ul className="mt-10 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+              {services.map((s) => {
+                const perks = (s.description ?? "").split("+").map((x) => x.trim()).filter(Boolean);
+                const sub = s.name.includes("اشتراك");
+                return (
+                  <li key={s.id}>
+                    <Link href={`/book?service=${s.id}`} className="gold-frame group block h-full">
+                      <span className="gold-frame-inner flex h-full min-h-[11.5rem] sm:min-h-[15rem] flex-col items-center px-3 py-4 text-center">
+                        <span className="grid size-10 place-items-center rounded-full border border-gold/40 bg-gold/10 text-gold-light">
+                          {sub ? <Crown className="size-5" /> : <Scissors className="size-5" />}
+                        </span>
+                        <span className="mt-2.5 font-display text-lg leading-snug text-bone transition group-hover:text-gold-light sm:text-xl">{s.name}</span>
+                        {perks.length > 0 ? (
+                          <span className="mt-2 flex flex-col gap-1 text-[11px] leading-4 text-mute sm:text-xs">
+                            {perks.map((x) => (
+                              <span key={x}>✦ {x}</span>
+                            ))}
+                          </span>
+                        ) : (
+                          <span className="mt-1.5 flex items-center gap-1 text-xs text-faint">
+                            <Clock3 className="size-3.5" />
+                            {formatDuration(s.duration_minutes)}
+                          </span>
+                        )}
+                        <span className="mt-auto pt-3">
+                          <span className="num gold-text block !whitespace-nowrap font-display !text-2xl">{formatIQD(s.price_iqd)}</span>
+                          <span className="mt-1 inline-block text-[11px] text-gold-light/80 transition group-hover:text-gold-light">احجز ←</span>
+                        </span>
                       </span>
-                    </span>
-                    <span className="mx-1 min-w-4 flex-1 translate-y-[-4px] border-b border-dotted border-line" />
-                    <span className="num shrink-0 font-display text-lg text-gold">{formatIQD(s.price_iqd)}</span>
-                  </Link>
-                </li>
-              ))}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           )}
           <p className="mt-6 px-2 text-xs text-faint">نعمل بنظام الحجز. بدون إحراج لطفاً، الأسعار ثابتة.</p>

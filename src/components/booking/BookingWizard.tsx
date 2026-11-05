@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Field";
 import { Alert, EmptyState } from "@/components/ui/Feedback";
 import { ShopMark } from "@/components/site/SiteHeader";
 import { BookingSuccess } from "./BookingSuccess";
+import { VipWaitlist } from "./VipWaitlist";
 import { formatDateKey, formatDuration, formatIQD, formatInstantTime, formatPhone, formatTime12, normalizeIraqiPhone } from "@/lib/format";
 import { addDays, hhmm, todayKey, toTimeKey, weekdayOf } from "@/lib/time";
 import type { Barber, Service, Shop, Slot, WorkingHours, BookingStatus } from "@/lib/types";
@@ -259,7 +260,7 @@ export function BookingWizard({
                   return (
                   <button
                     key={d.key}
-                    disabled={!d.open || full}
+                    disabled={!d.open}
                     onClick={() => {
                       setDate(d.key);
                       setSlot(null);
@@ -270,7 +271,8 @@ export function BookingWizard({
                     className={cn(
                       "flex w-full animate-rise items-center gap-4 rounded-[14px] border px-4 py-3 text-right transition active:scale-[0.99]",
                       d.key === date ? "border-gold/70 bg-gold/[0.07]" : "border-line-soft bg-coal hover:border-gold/40",
-                      (!d.open || full) && "cursor-not-allowed opacity-45",
+                      !d.open && "cursor-not-allowed opacity-45",
+                      full && "border-gold/25 opacity-80",
                     )}
                   >
                     <span className="num grid size-12 shrink-0 place-items-center rounded-full border border-gold/40 font-display text-xl text-gold-light">
@@ -284,7 +286,7 @@ export function BookingWizard({
                       </span>
                     </span>
                     <span className={cn("shrink-0 text-xs", d.open && !full ? "text-gold-light" : "text-faint")}>
-                      {!d.open ? "عطلة" : free === undefined ? <span className="shimmer inline-block h-3 w-16 rounded-full" /> : full ? "محجوز بالكامل" : free === 1 ? "وقت واحد فارغ" : `${free} أوقات فارغة`}
+                      {!d.open ? "عطلة" : free === undefined ? <span className="shimmer inline-block h-3 w-16 rounded-full" /> : full ? <span className="rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-gold-light">ممتلئ · سجّل VIP</span> : free === 1 ? "وقت واحد فارغ" : `${free} أوقات فارغة`}
                     </span>
                   </button>
                   );
@@ -311,11 +313,17 @@ export function BookingWizard({
                 </Button>
               </div>
             ) : groupedSlots.length === 0 ? (
-              <EmptyState icon={CalendarX2} title="ما اكو أوقات بهذا اليوم" description="ارجع واختار يوم ثاني." />
+              <div className="space-y-5">
+                <EmptyState icon={CalendarX2} title="ما اكو أوقات بهذا اليوم" description="ارجع واختار يوم ثاني، أو سجّل بقائمة VIP." />
+                <VipWaitlist date={date} />
+              </div>
             ) : (
               <div className="space-y-6">
                 {!groupedSlots.some((g) => g.slots.some((x) => x.available)) && (
-                  <p className="rounded-xl border border-line-soft bg-coal-2 px-4 py-3 text-sm text-mute">هذا اليوم كله محجوز. ارجع واختار يوم ثاني.</p>
+                  <div className="space-y-3">
+                    <p className="rounded-xl border border-line-soft bg-coal-2 px-4 py-3 text-sm text-mute">هذا اليوم كله محجوز. ارجع واختار يوم ثاني، أو سجّل بقائمة VIP.</p>
+                    <VipWaitlist date={date} />
+                  </div>
                 )}
                 {groupedSlots.map((g) => (
                   <div key={g.label}>
