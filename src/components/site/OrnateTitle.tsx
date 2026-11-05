@@ -55,3 +55,17 @@ function Flourish({ className }: { className?: string }) {
     </svg>
   );
 }
+
+/** Small dark-engraved scroll for the ends of the gold "book now" plaque. */
+export function ButtonScroll({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 36" className={className} aria-hidden fill="none" stroke="#5a3d14" strokeLinecap="round" strokeOpacity="0.75">
+      <path d="M46 18 H30" strokeWidth="1.4" />
+      <path d="M30 18 C22 18 20 10 14 10 C8 10 6 16 10 19 C13 21 16 18 14 15" strokeWidth="1.6" />
+      <path d="M30 18 C22 18 20 26 14 26 C8 26 6 20 10 17" strokeWidth="1.6" />
+      <path d="M23 13 C25 7 31 6 35 8 C30 9 27 11 25.5 15Z" fill="#5a3d14" fillOpacity="0.6" stroke="none" />
+      <path d="M23 23 C25 29 31 30 35 28 C30 27 27 25 25.5 21Z" fill="#5a3d14" fillOpacity="0.6" stroke="none" />
+      <circle cx="3" cy="18" r="2" fill="#5a3d14" fillOpacity="0.7" stroke="none" />
+    </svg>
+  );
+}
