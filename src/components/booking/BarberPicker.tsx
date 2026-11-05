@@ -9,9 +9,16 @@ import type { Barber } from "@/lib/types";
  * Drop the image in public/barbers/ and it shows up without touching the database.
  */
 const LOCAL_PHOTOS: { match: RegExp; src: string }[] = [
-  // { match: /فراس/, src: "/barbers/firas.webp" },
-  // { match: /زيد/, src: "/barbers/zaid.webp" },
+  { match: /فراس/, src: "/barbers/firas.webp" },
+  { match: /زيد/, src: "/barbers/zaid.webp" },
 ];
+
+/** Each barber's own WhatsApp (international format). Anyone not listed uses the shop's number. */
+const LOCAL_WHATSAPP: { match: RegExp; phone: string }[] = [{ match: /زيد/, phone: "9647825538530" }];
+
+export function barberWhatsapp(name: string | null | undefined, shopWhatsapp: string | null): string | null {
+  return (name && LOCAL_WHATSAPP.find((p) => p.match.test(name))?.phone) || shopWhatsapp || null;
+}
 
 export function barberPhoto(b: Pick<Barber, "name" | "photo_url">): string | null {
   return b.photo_url || LOCAL_PHOTOS.find((p) => p.match.test(b.name))?.src || null;
@@ -44,8 +51,12 @@ function BarberCard({ barber, index, selected, onClick }: { barber: Barber; inde
         {/* portrait in an arched gold frame */}
         <span className="relative mx-3 mt-3 block aspect-[3/4] overflow-hidden rounded-t-[999px] rounded-b-xl border border-gold/60 bg-black/30 sm:mx-4 sm:mt-4">
           {photo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={photo} alt={barber.name} className="size-full object-cover transition duration-700 group-hover:scale-[1.04]" />
+            <span className="grid size-full place-items-center bg-[radial-gradient(circle_at_50%_40%,#22564a,#0d2a22_75%)]">
+              <span className="relative w-[84%] rounded-full bg-[linear-gradient(150deg,#f3d79a,#b5853f_40%,#6e4f22_60%,#d9b072)] p-[3px] shadow-[0_10px_30px_-8px_rgba(0,0,0,0.7)]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={photo} alt={barber.name} className="aspect-square w-full rounded-full object-cover transition duration-700 group-hover:scale-[1.03]" />
+              </span>
+            </span>
           ) : (
             <Monogram name={barber.name} />
           )}

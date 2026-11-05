@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BellRing, Check, Copy, CalendarSearch } from "lucide-react";
+import { BellRing, Check, Copy, CalendarSearch, MessageCircle } from "lucide-react";
+import { barberWhatsapp } from "./BarberPicker";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatIQD, formatInstantDate, formatInstantTime } from "@/lib/format";
@@ -23,6 +24,7 @@ export function BookingSuccess({
   phone: string;
 }) {
   const [copied, setCopied] = useState(false);
+  const wa = barberWhatsapp(barberName, shop.whatsapp);
   const when = `${formatInstantDate(booking.starts_at, shop.timezone)} الساعة ${formatInstantTime(booking.starts_at, shop.timezone)}`;
 
   return (
@@ -78,6 +80,19 @@ export function BookingSuccess({
           <CalendarSearch className="size-5" />
           تابع حالة الحجز
         </ButtonLink>
+        {wa && (
+          <ButtonLink
+            href={`https://wa.me/${wa}?text=${encodeURIComponent(`هلو${barberName ? ` ${barberName}` : ""}، حجزت عندك ${when}. رمز الحجز ${booking.code}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="outline"
+            size="lg"
+            className="w-full"
+          >
+            <MessageCircle className="size-5" />
+            {barberName ? `راسل ${barberName} على الواتساب` : "راسل الصالون على الواتساب"}
+          </ButtonLink>
+        )}
         <Link href="/" className="block py-3 text-center text-sm text-mute hover:text-bone">
           رجوع للرئيسية
         </Link>
